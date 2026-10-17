@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¿Aprobará el curso? · Predictor académico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --fondo: #EEF1F5;
+    --hoja: #FFFFFF;
+    --tinta: #1C2541;
+    --tinta-suave: #5C677D;
+    --linea: #D5DBE3;
+    --acento: #2F5DA8;
+    --acento-texto: #FFFFFF;
+    --aprueba: #1F7A4D;
+    --aprueba-fondo: #E6F4EC;
+    --reprueba: #B42318;
+    --reprueba-fondo: #FCEBE9;
+    --pista: #DCE2EA;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --fondo: #121722;
+      --hoja: #1A2130;
+      --tinta: #E6EAF0;
+      --tinta-suave: #9AA5B8;
+      --linea: #2E384B;
+      --acento: #7FA6E8;
+      --acento-texto: #10172A;
+      --aprueba: #5BC48C;
+      --aprueba-fondo: #15301F;
+      --reprueba: #F2867C;
+      --reprueba-fondo: #3A1C1A;
+      --pista: #2E384B;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Figtree", "Segoe UI", system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--tinta);
+    background: var(--fondo);
+    font-variant-numeric: tabular-nums;
+  }
+  :focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+  .contenedor { max-width: 1120px; margin: 0 auto; padding: 40px 24px 56px; }
+
+  /* ---------- Encabezado ---------- */
+  header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 32px; margin-bottom: 28px; }
+  h1 { font-size: 2.6rem; font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; margin: 0 0 8px; }
+  .subtitulo { margin: 0; color: var(--tinta-suave); max-width: 56ch; }
+  .estado-api { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; color: var(--tinta-suave); padding: 6px 12px; border: 1px solid var(--linea); border-radius: 999px; background: var(--hoja); }
+  .estado-api .punto { width: 9px; height: 9px; border-radius: 50%; background: var(--tinta-suave); flex-shrink: 0; }
+  .estado-api[data-estado="ok"] .punto { background: var(--aprueba); }
+  .estado-api[data-estado="error"] .punto { background: var(--reprueba); }
+
+  /* ---------- Distribución ---------- */
+  .rejilla { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+
+  /* ---------- Ficha del estudiante ---------- */
+  form.ficha { background: var(--hoja); border: 1px solid var(--linea); border-radius: 10px; }
+  .ejemplos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 16px 24px; border-bottom: 1px solid var(--linea); font-size: 15px; color: var(--tinta-suave); }
+  .ejemplos button { font: inherit; font-weight: 600; color: var(--acento); background: none; border: 1px solid var(--linea); border-radius: 6px; padding: 5px 12px; cursor: pointer; }
+  .ejemplos button:hover { border-color: var(--acento); }
+  fieldset { border: none; margin: 0; padding: 20px 24px 8px; border-bottom: 1px solid var(--linea); }
+  legend { float: left; width: 100%; padding: 0; margin-bottom: 12px; font-weight: 800; font-size: 1.05rem; }
+  .campo { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 4px 16px; align-items: center; margin-bottom: 18px; clear: both; }
+  .campo label { font-weight: 600; }
+  .campo .ayuda { grid-column: 1; font-size: 14px; color: var(--tinta-suave); margin-top: -4px; }
+  .campo input[type="number"] {
+    grid-column: 2; grid-row: 1 / span 2; width: 100%;
+    font: inherit; font-weight: 600; font-size: 1.15rem; text-align: right;
+    padding: 8px 10px; border: 1px solid var(--linea); border-radius: 6px; background: var(--hoja); color: var(--tinta);
+  }
+  .campo input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--acento); margin: 6px 0 0; }
+  .campo input[aria-invalid="true"] { border-color: var(--reprueba); border-width: 2px; }
+
+  .eleccion { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; clear: both; }
+  .eleccion .texto { font-weight: 600; }
+  .eleccion .texto span { display: block; font-weight: 400; font-size: 14px; color: var(--tinta-suave); }
+  .segmentos { position: relative; display: inline-flex; border: 1px solid var(--linea); border-radius: 8px; padding: 3px; gap: 3px; flex-shrink: 0; }
+  .segmentos input { position: absolute; opacity: 0; pointer-events: none; }
+  .segmentos label { padding: 6px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; color: var(--tinta-suave); }
+  .segmentos input:checked + label { background: var(--tinta); color: var(--hoja); }
+  .segmentos input:focus-visible + label { outline: 3px solid var(--acento); outline-offset: 1px; }
+
+  .acciones { padding: 20px 24px 24px; }
+  button.predecir {
+    width: 100%; font: inherit; font-weight: 800; font-size: 1.1rem;
+    padding: 14px 20px; border: none; border-radius: 8px; cursor: pointer;
+    background: var(--acento); color: var(--acento-texto);
+  }
+  button.predecir:disabled { opacity: 0.65; cursor: progress; }
+
+  /* ---------- Panel de resultado ---------- */
+  .panel { position: sticky; top: 24px; background: var(--hoja); border: 1px solid var(--linea); border-radius: 10px; padding: 28px 24px; min-height: 360px; display: flex; flex-direction: column; }
+  .panel h2 { font-size: 1.05rem; font-weight: 800; margin: 0 0 20px; }
+  #contenidoPanel { flex: 1; display: flex; flex-direction: column; }
+  .vacio { color: var(--tinta-suave); justify-content: center; }
+  .vacio strong { display: block; color: var(--tinta); font-size: 1.2rem; margin-bottom: 6px; }
+
+  .sello-zona { display: grid; place-items: center; padding: 20px 0 24px; }
+  .sello {
+    display: inline-block; font-size: 2.9rem; font-weight: 800; letter-spacing: 0.02em;
+    padding: 10px 28px; border: 5px solid currentColor; border-radius: 10px;
+    transform: rotate(-4deg);
+  }
+  .sello.aprueba { color: var(--aprueba); background: var(--aprueba-fondo); }
+  .sello.reprueba { color: var(--reprueba); background: var(--reprueba-fondo); }
+  .sello.estampar { animation: estampar 420ms cubic-bezier(.2,.9,.3,1.2); }
+  @keyframes estampar {
+    0% { transform: rotate(-4deg) scale(1.6); opacity: 0; }
+    60% { transform: rotate(-4deg) scale(0.95); opacity: 1; }
+    100% { transform: rotate(-4deg) scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) { .sello.estampar { animation: none; } }
+  .explicacion { margin: 0 0 18px; color: var(--tinta-suave); text-align: center; }
+
+  dl.resumen { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 0; padding-top: 16px; border-top: 1px solid var(--linea); font-size: 15px; }
+  dl.resumen dt { color: var(--tinta-suave); }
+  dl.resumen dd { margin: 0; font-weight: 600; text-align: right; }
+
+  .esperando { justify-content: center; }
+  .barra { height: 6px; border-radius: 3px; background: var(--pista); overflow: hidden; margin: 14px 0 12px; }
+  .barra span { display: block; height: 100%; width: 35%; background: var(--acento); border-radius: 3px; animation: avance 1.3s ease-in-out infinite; }
+  @keyframes avance { 0% { transform: translateX(-100%); } 100% { transform: translateX(290%); } }
+  @media (prefers-reduced-motion: reduce) { .barra span { animation: none; width: 100%; opacity: 0.5; } }
+  .esperando p { margin: 0; color: var(--tinta-suave); font-size: 15px; }
+
+  .error .caja { padding: 16px; border-left: 4px solid var(--reprueba); background: var(--reprueba-fondo); border-radius: 0 6px 6px 0; }
+  .error strong { display: block; margin-bottom: 4px; color: var(--reprueba); }
+  .error p { margin: 0; }
+  .error ul { margin: 8px 0 0; padding-left: 20px; }
+
+  /* ---------- Historial ---------- */
+  section.historial { margin-top: 32px; }
+  section.historial h2 { font-size: 1.05rem; font-weight: 800; margin: 0 0 12px; }
+  .tabla { overflow-x: auto; background: var(--hoja); border: 1px solid var(--linea); border-radius: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 680px; }
+  th, td { text-align: right; padding: 10px 14px; border-bottom: 1px solid var(--linea); }
+  th:first-child, td:first-child, th:last-child, td:last-child { text-align: left; }
+  th { font-weight: 600; color: var(--tinta-suave); }
+  tbody tr:last-child td { border-bottom: none; }
+  .etiqueta { font-weight: 700; }
+  .etiqueta.aprueba { color: var(--aprueba); }
+  .etiqueta.reprueba { color: var(--reprueba); }
+  .sin-historial { padding: 18px 14px; color: var(--tinta-suave); margin: 0; }
+
+  footer { margin-top: 40px; font-size: 14px; color: var(--tinta-suave); max-width: 70ch; }
+
+  @media (max-width: 860px) {
+    .rejilla { grid-template-columns: 1fr; }
+    .panel { position: static; min-height: 0; }
+    h1 { font-size: 2.1rem; }
+  }
+  @media (max-width: 480px) {
+    .contenedor { padding: 28px 14px 40px; }
+    fieldset, .ejemplos, .acciones { padding-left: 16px; padding-right: 16px; }
+    .eleccion { flex-direction: column; align-items: flex-start; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="contenedor">
+
+  <header>
+    <div>
+      <h1>¿Aprobará el curso?</h1>
+      <p class="subtitulo">Ingresa los datos del estudiante y el modelo estimará si aprobará. La predicción la hace el modelo champion publicado en Databricks.</p>
+    </div>
+    <div class="estado-api" id="estadoApi" data-estado="revisando" role="status">
+      <span class="punto" aria-hidden="true"></span><span id="estadoTexto">Revisando el servicio…</span>
+    </div>
+  </header>
+
+  <div class="rejilla">
+    <form class="ficha" id="ficha" novalidate>
+      <div class="ejemplos">
+        <span>Cargar un caso de ejemplo:</span>
+        <button type="button" data-ejemplo="destacado">Estudiante destacado</button>
+        <button type="button" data-ejemplo="promedio">Estudiante promedio</button>
+        <button type="button" data-ejemplo="riesgo">Estudiante en riesgo</button>
+      </div>
+
+      <fieldset>
+        <legend>Hábitos</legend>
+        <div class="campo">
+          <label for="horas_estudio">Horas de estudio</label>
+          <input type="number" id="horas_estudio" min="0" max="24" step="0.5" value="7.5" required>
+          <span class="ayuda">Por día, entre 0 y 24</span>
+          <input type="range" min="0" max="12" step="0.5" value="7.5" data-para="horas_estudio" aria-label="Horas de estudio">
+        </div>
+        <div class="campo">
+          <label for="horas_sueno">Horas de sueño</label>
+          <input type="number" id="horas_sueno" min="0" max="24" step="0.5" value="7" required>
+          <span class="ayuda">Por día, entre 0 y 24</span>
+          <input type="range" min="0" max="12" step="0.5" value="7" data-para="horas_sueno" aria-label="Horas de sueño">
+        </div>
+        <div class="campo">
+          <label for="indice_dedicacion">Índice de dedicación</label>
+          <input type="number" id="indice_dedicacion" min="0" step="0.5" value="8" required>
+          <span class="ayuda">0 o más; la mayoría está entre 0 y 10</span>
+          <input type="range" min="0" max="10" step="0.5" value="8" data-para="indice_dedicacion" aria-label="Índice de dedicación">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Desempeño</legend>
+        <div class="campo">
+          <label for="asistencia">Asistencia (%)</label>
+          <input type="number" id="asistencia" min="0" max="100" step="1" value="90" required>
+          <span class="ayuda">Porcentaje de clases asistidas, entre 0 y 100</span>
+          <input type="range" min="0" max="100" step="1" value="90" data-para="asistencia" aria-label="Asistencia">
+        </div>
+        <div class="campo">
+          <label for="promedio_previo">Promedio previo</label>
+          <input type="number" id="promedio_previo" min="0" max="5" step="0.1" value="4.2" required>
+          <span class="ayuda">Escala de 0 a 5</span>
+          <input type="range" min="0" max="5" step="0.1" value="4.2" data-para="promedio_previo" aria-label="Promedio previo">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Condición académica</legend>
+        <div class="eleccion">
+          <div class="texto" id="t-riesgo">¿Está en riesgo académico?<span>Según el registro de la universidad</span></div>
+          <div class="segmentos" role="radiogroup" aria-labelledby="t-riesgo">
+            <input type="radio" name="en_riesgo" id="riesgo-no" value="0" checked><label for="riesgo-no">No</label>
+            <input type="radio" name="en_riesgo" id="riesgo-si" value="1"><label for="riesgo-si">Sí</label>
+          </div>
+        </div>
+        <div class="eleccion">
+          <div class="texto" id="t-destacado">¿Es estudiante destacado?<span>Con reconocimiento académico previo</span></div>
+          <div class="segmentos" role="radiogroup" aria-labelledby="t-destacado">
+            <input type="radio" name="destacado" id="destacado-no" value="0"><label for="destacado-no">No</label>
+            <input type="radio" name="destacado" id="destacado-si" value="1" checked><label for="destacado-si">Sí</label>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="acciones">
+        <button type="submit" class="predecir" id="boton">Predecir</button>
+      </div>
+    </form>
+
+    <aside class="panel" aria-live="polite">
+      <h2>Resultado</h2>
+      <div class="vacio" id="contenidoPanel">
+        <strong>Aún no hay predicción</strong>
+        Completa los datos, o carga un caso de ejemplo, y presiona Predecir.
+      </div>
+    </aside>
+  </div>
+
+  <section class="historial">
+    <h2>Predicciones de esta sesión</h2>
+    <div class="tabla" id="tablaHistorial">
+      <p class="sin-historial">Las predicciones que hagas aparecerán aquí para compararlas. Se borran al cerrar la página.</p>
+    </div>
+  </section>
+
+  <footer>
+    El formulario envía los datos a una API en Azure Container Apps, que consulta el endpoint MLOPS_EAN en Databricks. Ningún dato se guarda.
+  </footer>
+</div>
+
+<script>
+  // ===== Configuración: reemplaza TU_URL por la dirección de tu API =====
+  const API_URL = "https://api-mlops-ean.yellowbush-51200e9d.westus.azurecontainerapps.io/predecir";
+
+  const HEALTH_URL = API_URL.replace(/\/predecir\/?$/, "/health");
+  const CAMPOS_NUMERICOS = ["horas_estudio", "horas_sueno", "indice_dedicacion", "asistencia", "promedio_previo"];
+  const NOMBRES = {
+    horas_estudio: "Horas de estudio", horas_sueno: "Horas de sueño", indice_dedicacion: "Índice de dedicación",
+    asistencia: "Asistencia", promedio_previo: "Promedio previo", en_riesgo: "En riesgo", destacado: "Destacado",
+  };
+  const EJEMPLOS = {
+    destacado: { horas_estudio: 8, horas_sueno: 7.5, indice_dedicacion: 9, asistencia: 95, promedio_previo: 4.6, en_riesgo: 0, destacado: 1 },
+    promedio:  { horas_estudio: 4, horas_sueno: 6.5, indice_dedicacion: 5, asistencia: 80, promedio_previo: 3.6, en_riesgo: 0, destacado: 0 },
+    riesgo:    { horas_estudio: 1.5, horas_sueno: 5, indice_dedicacion: 2, asistencia: 55, promedio_previo: 2.6, en_riesgo: 1, destacado: 0 },
+  };
+
+  const ficha = document.getElementById("ficha");
+  const boton = document.getElementById("boton");
+  const panel = document.getElementById("contenidoPanel");
+  const historial = [];
+
+  // ---- Utilidades ----
+  const el = (etiqueta, props = {}, hijos = []) => {
+    const n = document.createElement(etiqueta);
+    Object.assign(n, props);
+    hijos.forEach((h) => n.append(h));
+    return n;
+  };
+  const formatear = (v) => Number.isInteger(v) ? String(v) : v.toLocaleString("es-CO", { maximumFractionDigits: 2 });
+
+  // ---- Sincroniza cada número con su deslizador ----
+  document.querySelectorAll('input[type="range"]').forEach((rango) => {
+    const numero = document.getElementById(rango.dataset.para);
+    rango.addEventListener("input", () => { numero.value = rango.value; numero.removeAttribute("aria-invalid"); });
+    numero.addEventListener("input", () => { if (numero.value !== "") rango.value = numero.value; numero.removeAttribute("aria-invalid"); });
+  });
+
+  // ---- Casos de ejemplo ----
+  document.querySelectorAll("[data-ejemplo]").forEach((b) => {
+    b.addEventListener("click", () => {
+      const datos = EJEMPLOS[b.dataset.ejemplo];
+      CAMPOS_NUMERICOS.forEach((id) => {
+        const numero = document.getElementById(id);
+        numero.value = datos[id];
+        numero.removeAttribute("aria-invalid");
+        document.querySelector(`input[data-para="${id}"]`).value = datos[id];
+      });
+      document.getElementById(datos.en_riesgo ? "riesgo-si" : "riesgo-no").checked = true;
+      document.getElementById(datos.destacado ? "destacado-si" : "destacado-no").checked = true;
+    });
+  });
+
+  // ---- Lee y valida el formulario ----
+  function leerDatos() {
+    const datos = {};
+    const errores = [];
+    CAMPOS_NUMERICOS.forEach((id) => {
+      const input = document.getElementById(id);
+      const valor = parseFloat(input.value);
+      const min = parseFloat(input.min);
+      const max = input.max === "" ? Infinity : parseFloat(input.max);
+      if (Number.isNaN(valor) || valor < min || valor > max) {
+        input.setAttribute("aria-invalid", "true");
+        errores.push(max === Infinity ? `${NOMBRES[id]}: debe ser ${min} o más.` : `${NOMBRES[id]}: debe estar entre ${min} y ${max}.`);
+      } else {
+        input.removeAttribute("aria-invalid");
+        datos[id] = valor;
+      }
+    });
+    datos.en_riesgo = parseInt(ficha.querySelector('input[name="en_riesgo"]:checked').value, 10);
+    datos.destacado = parseInt(ficha.querySelector('input[name="destacado"]:checked').value, 10);
+    return { datos, errores };
+  }
+
+  // ---- Estados del panel ----
+  function mostrarEsperando() {
+    const contador = el("p", { textContent: "Consultando el modelo…" });
+    panel.className = "esperando";
+    panel.replaceChildren(
+      el("strong", { textContent: "Prediciendo" }),
+      el("div", { className: "barra" }, [el("span")]),
+      contador,
+    );
+    const inicio = Date.now();
+    return setInterval(() => {
+      const s = Math.round((Date.now() - inicio) / 1000);
+      contador.textContent = s < 8
+        ? "Consultando el modelo…"
+        : `Han pasado ${s} s. El servicio estaba en reposo y está arrancando; la primera vez puede tardar hasta 2 minutos.`;
+    }, 1000);
+  }
+
+  function mostrarError(titulo, mensaje, lista = []) {
+    panel.className = "error";
+    const hijos = [el("strong", { textContent: titulo }), el("p", { textContent: mensaje })];
+    if (lista.length) hijos.push(el("ul", {}, lista.map((t) => el("li", { textContent: t }))));
+    panel.replaceChildren(el("div", { className: "caja" }, hijos));
+  }
+
+  function mostrarResultado(pred, datos) {
+    const aprueba = pred === 1;
+    const sello = el("span", { className: `sello ${aprueba ? "aprueba" : "reprueba"} estampar`, textContent: aprueba ? "Aprueba" : "Reprueba" });
+    const resumen = el("dl", { className: "resumen" });
+    Object.keys(NOMBRES).forEach((k) => {
+      let v = datos[k];
+      if (k === "en_riesgo" || k === "destacado") v = v ? "Sí" : "No";
+      else if (k === "asistencia") v = `${formatear(v)} %`;
+      else v = formatear(v);
+      resumen.append(el("dt", { textContent: NOMBRES[k] }), el("dd", { textContent: v }));
+    });
+    panel.className = "";
+    panel.replaceChildren(
+      el("div", { className: "sello-zona" }, [sello]),
+      el("p", { className: "explicacion", textContent: aprueba
+        ? "Con estos datos, el modelo estima que el estudiante aprobará el curso."
+        : "Con estos datos, el modelo estima que el estudiante no aprobará el curso." }),
+      resumen,
+    );
+  }
+
+  function agregarHistorial(pred, datos) {
+    historial.unshift({ hora: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", second: "2-digit" }), pred, datos });
+    const encabezado = ["Hora", "Estudio", "Sueño", "Dedicación", "Asistencia", "Promedio", "Riesgo", "Destacado", "Resultado"];
+    const filas = historial.map((h) => {
+      const d = h.datos;
+      const celdas = [h.hora, formatear(d.horas_estudio), formatear(d.horas_sueno), formatear(d.indice_dedicacion),
+        `${formatear(d.asistencia)} %`, formatear(d.promedio_previo), d.en_riesgo ? "Sí" : "No", d.destacado ? "Sí" : "No"]
+        .map((t) => el("td", { textContent: t }));
+      celdas.push(el("td", {}, [el("span", { className: `etiqueta ${h.pred === 1 ? "aprueba" : "reprueba"}`, textContent: h.pred === 1 ? "Aprueba" : "Reprueba" })]));
+      return el("tr", {}, celdas);
+    });
+    const tabla = el("table", {}, [
+      el("thead", {}, [el("tr", {}, encabezado.map((t) => el("th", { scope: "col", textContent: t })))]),
+      el("tbody", {}, filas),
+    ]);
+    document.getElementById("tablaHistorial").replaceChildren(tabla);
+  }
+
+  // ---- Estado del servicio ----
+  function marcarApi(estado, texto) {
+    document.getElementById("estadoApi").dataset.estado = estado;
+    document.getElementById("estadoTexto").textContent = texto;
+  }
+
+  // ---- Envío ----
+  ficha.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const { datos, errores } = leerDatos();
+    if (errores.length) {
+      mostrarError("Revisa los datos", "Hay valores fuera del rango permitido:", errores);
+      return;
+    }
+    if (API_URL.includes("TU_URL")) {
+      mostrarError("Falta configurar la página", "Abre index.html y reemplaza TU_URL en la constante API_URL por la dirección de tu API.");
+      return;
+    }
+
+    boton.disabled = true;
+    boton.textContent = "Prediciendo…";
+    const reloj = mostrarEsperando();
+
+    try {
+      const r = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(datos),
+      });
+      let json = null;
+      try { json = await r.json(); } catch (_) { /* respuesta sin JSON */ }
+
+      if (r.ok && json && (json.prediccion === 0 || json.prediccion === 1)) {
+        mostrarResultado(json.prediccion, datos);
+        agregarHistorial(json.prediccion, datos);
+        marcarApi("ok", "Servicio en línea");
+      } else if (r.status === 422 && json && Array.isArray(json.detail)) {
+        const lista = json.detail.map((d) => {
+          const campo = Array.isArray(d.loc) ? d.loc[d.loc.length - 1] : "";
+          return `${NOMBRES[campo] || campo}: ${d.msg}`;
+        });
+        mostrarError("La API rechazó los datos (422)", "Estos campos no cumplen lo que espera el modelo:", lista);
+      } else if (json && typeof json.detail === "string") {
+        mostrarError(`El modelo no respondió (${r.status})`, `${json.detail} Intenta de nuevo en un momento.`);
+      } else {
+        mostrarError(`Respuesta inesperada (${r.status})`, "La API respondió algo que esta página no reconoce. Revisa que API_URL termine en /predecir.");
+      }
+    } catch (err) {
+      mostrarError("Sin conexión con la API", "No se pudo contactar el servicio. Revisa que API_URL tenga la dirección correcta y que la API esté desplegada.");
+      marcarApi("error", "Servicio sin respuesta");
+    } finally {
+      clearInterval(reloj);
+      boton.disabled = false;
+      boton.textContent = "Predecir";
+    }
+  });
+
+  // ---- Revisa el servicio al abrir la página ----
+  (async () => {
+    if (API_URL.includes("TU_URL")) { marcarApi("error", "API sin configurar"); return; }
+    const control = new AbortController();
+    const limite = setTimeout(() => control.abort(), 20000);
+    try {
+      const r = await fetch(HEALTH_URL, { signal: control.signal });
+      const j = await r.json();
+      if (r.ok && j.databricks_configurado) marcarApi("ok", "Servicio en línea");
+      else marcarApi("error", "API sin conexión a Databricks");
+    } catch (_) {
+      marcarApi("revisando", "Servicio en reposo; despertará con la primera predicción");
+    } finally {
+      clearTimeout(limite);
+    }
+  })();
+</script>
+</body>
+</html>
